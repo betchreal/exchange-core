@@ -1,5 +1,5 @@
 {
-  "name": "@repo/ui",
+  "name": "@exchange-core/ui",
   "version": "0.0.0",
   "private": true,
   "exports": {
@@ -11,13 +11,11 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*",
+    "@exchange-core/eslint-config": "*",
+    "@exchange-core/typescript-config": "*",
     "@types/node": "^22.15.3",
     "@types/react": "19.1.0",
-    "@types/react-dom": "19.1.1",
-    "eslint": "^9.34.0",
-    "typescript": "5.9.2"
+    "@types/react-dom": "19.1.1"
   },
   "dependencies": {
     "react": "^19.1.0",
