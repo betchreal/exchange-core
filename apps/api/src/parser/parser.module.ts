@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ParserController } from './parser.controller';
 import { ParserService } from './parser.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Parser } from './entities/parser.entity';
 
 @Module({
-  controllers: [ParserController],
-  providers: [ParserService]
+	imports: [TypeOrmModule.forFeature([Parser])],
+	controllers: [ParserController],
+	providers: [ParserService]
 })
 export class ParserModule {}

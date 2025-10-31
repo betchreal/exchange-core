@@ -1,0 +1,98 @@
+[
+  {
+    "code": "BTC",
+    "description": "Bitcoin (BTC)"
+  },
+  {
+    "code": "BTCBEP20",
+    "description": "Bitcoin BEP20 (BTCB)"
+  },
+  {
+    "code": "ETH",
+    "description": "Ethereum (ETH)"
+  },
+  {
+    "code": "ETHBEP20",
+    "description": "Ethereum BEP20 (ETH)"
+  },
+  {
+    "code": "ETHARBTM",
+    "description": "Ethereum ARBITRUM (ETH)"
+  },
+  {
+    "code": "ETHOPTM",
+    "description": "Ethereum OPTIMISM (ETH)"
+  },
+  {
+    "code": "ETC",
+    "description": "Ethereum Classic (ETC)"
+  },
+  {
+    "code": "LTC",
+    "description": "Litecoin (LTC)"
+  },
+  {
+    "code": "XRP",
+    "description": "XRP (XRP)"
+  },
+  {
+    "code": "XMR",
+    "description": "Monero (XMR)"
+  },
+  {
+    "code": "DOGE",
+    "description": "Dogecoin (DOGE)"
+  },
+  {
+    "code": "POL",
+    "description": "Polygon (POL)"
+  },
+  {
+    "code": "DASH",
+    "description": "Dash (DASH)"
+  },
+  {
+    "code": "USDTERC20",
+    "description": "Tether ERC20 (USDT)"
+  },
+  {
+    "code": "USDTTRC20",
+    "description": "Tether TRC20 (USDT)"
+  },
+  {
+    "code": "USDTBEP20",
+    "description": "Tether BEP20 (USDT)"
+  },
+  {
+    "code": "USDTSOL",
+    "description": "Tether SOL (USDT)"
+  },
+  {
+    "code": "USDTPOLYGON",
+    "description": "Tether POLYGON (USDT)"
+  },
+  {
+    "code": "USDTTON",
+    "description": "Tether TON (USDT)"
+  },
+  {
+    "code": "USDTARBTM",
+    "description": "Tether ARBITRUM (USDT)"
+  },
+  {
+    "code": "USDTAVAXC",
+    "description": "Tether AVALANCHE (USDT)"
+  },
+  {
+    "code": "USDTOMNI",
+    "description": "Tether OMNI (USDT)"
+  },
+  {
+    "code": "USDTNEAR",
+    "description": "Tether NEAR (USDT)"
+  },
+  {
+    "code": "XAUTERC20",
+    "description": "Tether Gold ERC20 (XAUT)"
+  }
+]

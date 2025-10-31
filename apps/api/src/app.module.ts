@@ -18,37 +18,37 @@ import { StaffModule } from './staff/staff.module';
 import { TicketModule } from './ticket/ticket.module';
 
 @Module({
-  imports: [
-      ConfigModule.forRoot({
-          isGlobal: true,
-          // validationSchema !
-      }),
-      TypeOrmModule.forRootAsync({
-          inject: [ConfigService],
-          useFactory: (cfg: ConfigService) => ({
-              type: 'postgres',
-              host: cfg.getOrThrow<string>('DB_HOST'),
-              database: cfg.getOrThrow<string>('DB_NAME'),
-              port: cfg.getOrThrow<number>('DB_PORT'),
-              username: cfg.getOrThrow('DB_USER'),
-              password: cfg.getOrThrow<string>('DB_PASSWORD'),
-              autoLoadEntities: true, // to change
-              synchronize: true // to change
-          })
-      }),
-      AmlModule,
-      CurrencyModule,
-      CustomerModule,
-      IdentityModule,
-      MerchantModule,
-      OrderModule,
-      ParserModule,
-      PayoutModule,
-      RouteModule,
-      StaffModule,
-      TicketModule
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+	imports: [
+		ConfigModule.forRoot({
+			isGlobal: true
+			// validationSchema !
+		}),
+		TypeOrmModule.forRootAsync({
+			inject: [ConfigService],
+			useFactory: (cfg: ConfigService) => ({
+				type: 'postgres',
+				host: cfg.getOrThrow<string>('DB_HOST'),
+				database: cfg.getOrThrow<string>('DB_NAME'),
+				port: +cfg.getOrThrow<number>('DB_PORT'),
+				username: cfg.getOrThrow('DB_USER'),
+				password: cfg.getOrThrow<string>('DB_PASSWORD'),
+				autoLoadEntities: true,
+				synchronize: true
+			})
+		}),
+		AmlModule,
+		CurrencyModule,
+		CustomerModule,
+		IdentityModule,
+		MerchantModule,
+		OrderModule,
+		ParserModule,
+		PayoutModule,
+		RouteModule,
+		StaffModule,
+		TicketModule
+	],
+	controllers: [AppController],
+	providers: [AppService]
 })
 export class AppModule {}

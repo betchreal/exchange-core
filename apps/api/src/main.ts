@@ -1,24 +1,30 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import Decimal from 'decimal.js';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+	const app = await NestFactory.create(AppModule);
 
-  const config = new DocumentBuilder()
-    .setTitle('Exchange Core')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
+	const config = new DocumentBuilder()
+		.setTitle('Exchange Core')
+		.setVersion('1.0.0')
+		.addBearerAuth()
+		.build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+	const document = SwaggerModule.createDocument(app, config);
+	SwaggerModule.setup('docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3002);
+	await app.listen(process.env.PORT ?? 3002);
 }
 
+Decimal.set({
+	precision: 40,
+	rounding: Decimal.ROUND_HALF_UP
+});
+
 bootstrap()
-  .then(() => console.log(`Server is listening ${process.env.PORT ?? 3002}`))
-  .catch((e) => {
-    throw e;
-  });
+	.then(() => console.log(`Server is listening ${process.env.PORT ?? 3002}`))
+	.catch((e) => {
+		throw e;
+	});
