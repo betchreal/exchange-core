@@ -10,14 +10,8 @@ import { Principal } from './principal.entity';
 
 @Entity('sessions')
 export class Session {
-	@PrimaryGeneratedColumn()
-	sessionId: number;
-
-	@Column({
-		type: 'uuid',
-		unique: true
-	})
-	jti: string;
+	@PrimaryGeneratedColumn('uuid')
+	id: string;
 
 	@Column({
 		type: 'inet',

@@ -36,7 +36,7 @@ import { Route } from '../../route/entities/route.entity';
 )
 export class Currency {
 	@PrimaryGeneratedColumn()
-	currencyId: number;
+	id: number;
 
 	@Column({
 		type: 'varchar',

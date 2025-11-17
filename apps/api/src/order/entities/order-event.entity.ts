@@ -20,7 +20,7 @@ import { Order } from './order.entity';
 )
 export class OrderEvent {
 	@PrimaryGeneratedColumn()
-	eventId: number;
+	id: number;
 
 	@Column({
 		type: 'enum',

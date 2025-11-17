@@ -1,10 +1,19 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import Decimal from 'decimal.js';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
+	app.use(cookieParser());
+	app.useGlobalPipes(
+		new ValidationPipe({
+			whitelist: true,
+			transform: true
+		})
+	);
 
 	const config = new DocumentBuilder()
 		.setTitle('Exchange Core')

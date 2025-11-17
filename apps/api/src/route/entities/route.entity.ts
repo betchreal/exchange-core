@@ -46,7 +46,7 @@ import { ManualMerchant } from '../../merchant/entities/manual-merchant.entity';
 )
 export class Route {
 	@PrimaryGeneratedColumn()
-	routeId: number;
+	id: number;
 
 	@Column({
 		type: 'numeric',

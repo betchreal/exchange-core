@@ -14,7 +14,7 @@ import { Principal } from '../../identity/entities/principal.entity';
 @Check(`email ~ '^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$'`)
 export class Customer {
 	@PrimaryGeneratedColumn()
-	customerId: number;
+	id: number;
 
 	@Column({
 		type: 'varchar',

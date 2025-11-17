@@ -16,11 +16,10 @@ import { Route } from '../../route/entities/route.entity';
 @Unique(['name', 'version'])
 @Check(`name ~ '^[a-z0-9][a-z0-9_-]*$'`)
 @Check(`version ~ '^[a-z0-9][a-z0-9_.-]*$'`)
-@Check(`entry = 'index.js'`)
 @Check(`btrim(path) <> ''`)
 export class Payout {
 	@PrimaryGeneratedColumn()
-	payoutId: number;
+	id: number;
 
 	@Column({
 		type: 'varchar',
@@ -33,13 +32,6 @@ export class Payout {
 		length: 32
 	})
 	version: string;
-
-	@Column({
-		type: 'char',
-		length: 8,
-		default: 'index.js'
-	})
-	entry: string; // подумати, чи треба
 
 	@Column({
 		type: 'text'
@@ -60,10 +52,10 @@ export class Payout {
 	manifest: Manifest;
 
 	@Column({
-		type: 'jsonb',
-		default: () => "'{}'::jsonb"
+		type: 'text',
+		nullable: true
 	})
-	config: Record<string, any>;
+	config: string;
 
 	@CreateDateColumn({
 		type: 'timestamptz'

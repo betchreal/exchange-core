@@ -12,7 +12,7 @@ import {
 @Check(`btrim("paymentAccount") <> ''`)
 export class ManualMerchant {
 	@PrimaryGeneratedColumn()
-	manualMerchantId: number;
+	id: number;
 
 	@Column({
 		type: 'varchar',

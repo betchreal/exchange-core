@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import { AmlModule } from './aml/aml.module';
@@ -13,7 +14,10 @@ import { MerchantModule } from './merchant/merchant.module';
 import { OrderModule } from './order/order.module';
 import { ParserModule } from './parser/parser.module';
 import { PayoutModule } from './payout/payout.module';
+import { PluginCoreModule } from './plugin-core/plugin-core.module';
 import { RouteModule } from './route/route.module';
+import { SettingModule } from './setting/setting.module';
+import { SharedModule } from './shared/shared.module';
 import { StaffModule } from './staff/staff.module';
 import { TicketModule } from './ticket/ticket.module';
 
@@ -36,6 +40,7 @@ import { TicketModule } from './ticket/ticket.module';
 				synchronize: true
 			})
 		}),
+		EventEmitterModule.forRoot(),
 		AmlModule,
 		CurrencyModule,
 		CustomerModule,
@@ -44,7 +49,10 @@ import { TicketModule } from './ticket/ticket.module';
 		OrderModule,
 		ParserModule,
 		PayoutModule,
+		PluginCoreModule,
 		RouteModule,
+		SettingModule,
+		SharedModule,
 		StaffModule,
 		TicketModule
 	],

@@ -15,7 +15,7 @@ import { Session } from './session.entity';
 @Entity('principals')
 export class Principal {
 	@PrimaryGeneratedColumn()
-	principalId: number;
+	id: number;
 
 	@Column({
 		type: 'enum',

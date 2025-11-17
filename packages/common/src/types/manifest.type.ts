@@ -11,7 +11,10 @@ export type Manifest = {
   net: {
     egressAllowList: string[];
   };
+  allowCurrencyCodes?: string[];
+  webhook?: {
+    supported: boolean;
+    signature?: "none" /*| і подумати, які ще треба*/;
+  };
   configSchema: Record<string, any>;
 };
-
-// додати allowXml!

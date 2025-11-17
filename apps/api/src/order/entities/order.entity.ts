@@ -43,7 +43,7 @@ import { Principal } from '../../identity/entities/principal.entity';
 )
 export class Order {
 	@PrimaryGeneratedColumn()
-	orderId: number;
+	id: number;
 
 	@Column({
 		type: 'numeric',
