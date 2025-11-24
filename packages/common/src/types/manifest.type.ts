@@ -16,5 +16,6 @@ export type Manifest = {
     supported: boolean;
     signature?: "none" /*| і подумати, які ще треба*/;
   };
+  supportedPairs?: Record<string, string[]>;
   configSchema: Record<string, any>;
 };

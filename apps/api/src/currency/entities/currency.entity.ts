@@ -32,7 +32,7 @@ import { Route } from '../../route/entities/route.entity';
 @Check(`jsonb_typeof("depositFields") = 'array'`)
 @Check(`jsonb_typeof("withdrawFields") = 'array'`)
 @Check(
-	`("merchantBinding" = 'explicit' AND "merchantId" IS NOT NULL AND "manualMerchantId" IS NULL) OR ("merchantBinding" = 'manual' AND "merchantId" IS NULL AND "manualMerchantId" IS NOT NULL)`
+	`(active = true AND (("merchantBinding" = 'explicit' AND "merchantId" IS NOT NULL AND "manualMerchantId" IS NULL) OR ("merchantBinding" = 'manual' AND "merchantId" IS NULL AND "manualMerchantId" IS NOT NULL))) OR (active = false)`
 )
 export class Currency {
 	@PrimaryGeneratedColumn()
@@ -60,7 +60,7 @@ export class Currency {
 		type: 'text',
 		nullable: true
 	})
-	iconUrl?: string;
+	iconUrl?: string | null;
 
 	@Column({
 		type: 'numeric',

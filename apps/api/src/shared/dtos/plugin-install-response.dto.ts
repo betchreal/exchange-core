@@ -18,6 +18,12 @@ export class PluginInstallResponseDto {
 	status: PluginStatus;
 
 	@Expose()
-	@Transform(({ obj }) => obj.manifest.configSchema, { toClassOnly: true })
+	@Transform(({ obj }) => obj.manifest.configSchema)
 	configSchema: Record<string, any>;
+
+	@Expose()
+	createdAt: Date;
+
+	@Expose()
+	updatedAt: Date;
 }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ParserController } from './parser.controller';
 import { ParserService } from './parser.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,6 +8,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { pluginUploadFactory } from '../shared/factories/plugin-upload.factory';
 import { PluginType } from '@exchange-core/common';
+import { RouteModule } from '../route/route.module';
 
 @Module({
 	imports: [
@@ -16,9 +17,11 @@ import { PluginType } from '@exchange-core/common';
 			useFactory: pluginUploadFactory(PluginType.PARSER)
 		}),
 		TypeOrmModule.forFeature([Parser]),
+		forwardRef(() => RouteModule),
 		PluginCoreModule
 	],
 	controllers: [ParserController],
-	providers: [ParserService]
+	providers: [ParserService],
+	exports: [ParserService]
 })
 export class ParserModule {}

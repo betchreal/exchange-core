@@ -1,5 +1,5 @@
 export enum FieldValidator {
-  NV = "NV",
+  NV = "no_validator",
   EMAIL = "email",
   // ...
 }

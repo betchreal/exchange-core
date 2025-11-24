@@ -2,8 +2,9 @@ import Decimal from "decimal.js";
 import { ValueTransformer } from "typeorm";
 
 export class NumericTransformer implements ValueTransformer {
-  to(value: Decimal | null): string | null {
-    if (value === null || value === undefined) return null;
+  to(value: Decimal | null): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
     return value.toString();
   }
 

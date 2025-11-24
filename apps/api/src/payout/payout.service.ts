@@ -1,5 +1,7 @@
 import {
 	BadRequestException,
+	forwardRef,
+	Inject,
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
@@ -13,11 +15,17 @@ import {
 	PluginType
 } from '@exchange-core/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { CurrencyService } from '../currency/currency.service';
+import { RouteService } from '../route/route.service';
 
 @Injectable()
 export class PayoutService {
 	constructor(
 		@InjectRepository(Payout) private readonly payout: Repository<Payout>,
+		@Inject(forwardRef(() => CurrencyService))
+		private readonly currencyService: CurrencyService,
+		@Inject(forwardRef(() => RouteService))
+		private readonly routeService: RouteService,
 		private readonly core: PluginCoreService
 	) {}
 
@@ -102,8 +110,12 @@ export class PayoutService {
 		this.core.stop(ref);
 
 		payout.status = PluginStatus.DISABLED;
+		await this.currencyService.deactivateCurrenciesByPlugin(
+			PluginType.PAYOUT,
+			id
+		);
+		await this.routeService.deactivateRoutesByPlugin(PluginType.PAYOUT, id);
 		return this.payout.save(payout);
-		// handle currencies and routes changes
 	}
 
 	async remove(id: number) {
@@ -122,6 +134,20 @@ export class PayoutService {
 		await this.payout.update(ref.id, {
 			status: PluginStatus.DISABLED
 		});
-		// handle currencies and routes changes
+
+		await this.currencyService.deactivateCurrenciesByPlugin(
+			PluginType.PAYOUT,
+			ref.id
+		);
+		await this.routeService.deactivateRoutesByPlugin(
+			PluginType.PAYOUT,
+			ref.id
+		);
+	}
+
+	async getOne(id: number) {
+		const payout = await this.payout.findOne({ where: { id } });
+		if (!payout) throw new NotFoundException('Payout plugin not found.');
+		return payout;
 	}
 }

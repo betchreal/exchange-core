@@ -1,5 +1,7 @@
 import {
 	BadRequestException,
+	forwardRef,
+	Inject,
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
@@ -13,11 +15,17 @@ import {
 } from '@exchange-core/common';
 import { PluginCoreService } from '../plugin-core/plugin-core.service';
 import { OnEvent } from '@nestjs/event-emitter';
+import { CurrencyService } from '../currency/currency.service';
+import { RouteService } from '../route/route.service';
 
 @Injectable()
 export class AmlService {
 	constructor(
 		@InjectRepository(Aml) private readonly aml: Repository<Aml>,
+		@Inject(forwardRef(() => CurrencyService))
+		private readonly currencyService: CurrencyService,
+		@Inject(forwardRef(() => RouteService))
+		private readonly routeService: RouteService,
 		private readonly core: PluginCoreService
 	) {}
 
@@ -102,8 +110,12 @@ export class AmlService {
 		this.core.stop(ref);
 
 		aml.status = PluginStatus.DISABLED;
+		await this.currencyService.deactivateCurrenciesByPlugin(
+			PluginType.AML,
+			id
+		);
+		await this.routeService.deactivateRoutesByPlugin(PluginType.AML, id);
 		return this.aml.save(aml);
-		// handle currencies and routes changes
 	}
 
 	async remove(id: number) {
@@ -122,6 +134,20 @@ export class AmlService {
 		await this.aml.update(ref.id, {
 			status: PluginStatus.DISABLED
 		});
-		// handle currencies and routes changes
+
+		await this.currencyService.deactivateCurrenciesByPlugin(
+			PluginType.AML,
+			ref.id
+		);
+		await this.routeService.deactivateRoutesByPlugin(
+			PluginType.AML,
+			ref.id
+		);
+	}
+
+	async getOne(id: number) {
+		const aml = await this.aml.findOne({ where: { id } });
+		if (!aml) throw new NotFoundException('Aml plugin not found.');
+		return aml;
 	}
 }

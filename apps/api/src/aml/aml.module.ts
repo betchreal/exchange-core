@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AmlController } from './aml.controller';
 import { AmlService } from './aml.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,6 +8,8 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { pluginUploadFactory } from '../shared/factories/plugin-upload.factory';
 import { PluginType } from '@exchange-core/common';
+import { CurrencyModule } from '../currency/currency.module';
+import { RouteModule } from '../route/route.module';
 
 @Module({
 	imports: [
@@ -16,9 +18,12 @@ import { PluginType } from '@exchange-core/common';
 			useFactory: pluginUploadFactory(PluginType.AML)
 		}),
 		TypeOrmModule.forFeature([Aml]),
+		forwardRef(() => CurrencyModule),
+		forwardRef(() => RouteModule),
 		PluginCoreModule
 	],
 	controllers: [AmlController],
-	providers: [AmlService]
+	providers: [AmlService],
+	exports: [AmlService]
 })
 export class AmlModule {}

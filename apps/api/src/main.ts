@@ -4,6 +4,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import Decimal from 'decimal.js';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { DecimalPipe } from './shared/pipes/decimal.pipe';
+import { PgErrorFilter } from './shared/filters/pg-error.filter';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -12,8 +14,10 @@ async function bootstrap() {
 		new ValidationPipe({
 			whitelist: true,
 			transform: true
-		})
+		}),
+		new DecimalPipe()
 	);
+	app.useGlobalFilters(new PgErrorFilter());
 
 	const config = new DocumentBuilder()
 		.setTitle('Exchange Core')

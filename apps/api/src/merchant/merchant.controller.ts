@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Get,
 	HttpCode,
 	Param,
 	ParseFilePipe,
@@ -17,6 +18,8 @@ import { PluginInstallResponseDto } from '../shared/dtos/plugin-install-response
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateConfigDto } from '../shared/dtos/update-config.dto';
 import { PluginActionResponseDto } from '../shared/dtos/plugin-action-response.dto';
+import { BasePluginDetailResponseDto } from '../shared/dtos/base-plugin-detail-response.dto';
+import { MerchantDetailResponseDto } from './dtos/merchant-detail-response.dto';
 
 @Controller('merchant')
 export class MerchantController {
@@ -58,5 +61,11 @@ export class MerchantController {
 	@HttpCode(204)
 	removePlugin(@Param('id', ParseIntPipe) id: number) {
 		return this.merchantService.remove(id);
+	}
+
+	@Get(':id')
+	@Serialize(MerchantDetailResponseDto)
+	getPlugin(@Param('id', ParseIntPipe) id: number) {
+		return this.merchantService.getOne(id);
 	}
 }

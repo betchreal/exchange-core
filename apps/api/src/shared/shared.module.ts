@@ -1,10 +1,10 @@
 import { Global, Module } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import { SerializeInterceptor } from './interceptors/serialize.interceptor';
+import { DecimalPipe } from './pipes/decimal.pipe';
 
 @Global()
 @Module({
-	providers: [SerializeInterceptor],
-	exports: [SerializeInterceptor]
+	providers: [SerializeInterceptor, DecimalPipe],
+	exports: [SerializeInterceptor, DecimalPipe]
 })
 export class SharedModule {}

@@ -6,5 +6,4 @@ export type Field = {
   hint: string;
   type?: FieldType;
   validator: FieldValidator | string;
-  index: number;
 };

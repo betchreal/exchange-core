@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Get,
 	HttpCode,
 	Param,
 	ParseFilePipe,
@@ -17,6 +18,8 @@ import { Serialize } from '../shared/decorators/serialize.decorator';
 import { PluginInstallResponseDto } from '../shared/dtos/plugin-install-response.dto';
 import { UpdateConfigDto } from '../shared/dtos/update-config.dto';
 import { PluginActionResponseDto } from '../shared/dtos/plugin-action-response.dto';
+import { BasePluginDetailResponseDto } from '../shared/dtos/base-plugin-detail-response.dto';
+import { PayoutDetailResponseDto } from './dtos/payout-detail-response.dto';
 
 @Controller('payout')
 export class PayoutController {
@@ -58,5 +61,11 @@ export class PayoutController {
 	@HttpCode(204)
 	removePlugin(@Param('id', ParseIntPipe) id: number) {
 		return this.payoutService.remove(id);
+	}
+
+	@Get(':id')
+	@Serialize(PayoutDetailResponseDto)
+	getPlugin(@Param('id', ParseIntPipe) id: number) {
+		return this.payoutService.getOne(id);
 	}
 }

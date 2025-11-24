@@ -1,18 +1,28 @@
 import {
 	BadRequestException,
+	forwardRef,
+	Inject,
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Parser } from './entities/parser.entity';
 import { Repository } from 'typeorm';
-import { PluginStatus, PluginType } from '@exchange-core/common';
+import {
+	type PluginRef,
+	PluginStatus,
+	PluginType
+} from '@exchange-core/common';
 import { PluginCoreService } from '../plugin-core/plugin-core.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { RouteService } from '../route/route.service';
 
 @Injectable()
 export class ParserService {
 	constructor(
 		@InjectRepository(Parser) private readonly parser: Repository<Parser>,
+		@Inject(forwardRef(() => RouteService))
+		private readonly routeService: RouteService,
 		private readonly core: PluginCoreService
 	) {}
 
@@ -56,5 +66,23 @@ export class ParserService {
 
 		parser.config = await this.core.encrypt(config);
 		await this.parser.save(parser);
+	}
+
+	async getOne(id: number) {
+		const parser = await this.parser.findOne({ where: { id } });
+		if (!parser) throw new NotFoundException('Parser plugin not found.');
+		return parser;
+	}
+
+	@OnEvent('parser.crashed', { async: true })
+	async handleCrash(ref: PluginRef) {
+		await this.parser.update(ref.id, {
+			status: PluginStatus.DISABLED
+		});
+
+		await this.routeService.deactivateRoutesByPlugin(
+			PluginType.PARSER,
+			ref.id
+		);
 	}
 }

@@ -1,5 +1,7 @@
 import {
 	BadRequestException,
+	forwardRef,
+	Inject,
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
@@ -14,6 +16,9 @@ import {
 	PluginType
 } from '@exchange-core/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { ManualMerchantDto } from './dtos/manual-merchant.dto';
+import { CurrencyService } from '../currency/currency.service';
+import { RouteService } from '../route/route.service';
 
 @Injectable()
 export class MerchantService {
@@ -22,6 +27,10 @@ export class MerchantService {
 		private readonly merchant: Repository<Merchant>,
 		@InjectRepository(ManualMerchant)
 		private readonly manualMerchant: Repository<ManualMerchant>,
+		@Inject(forwardRef(() => CurrencyService))
+		private readonly currencyService: CurrencyService,
+		@Inject(forwardRef(() => RouteService))
+		private readonly routeService: RouteService,
 		private readonly core: PluginCoreService
 	) {}
 
@@ -109,8 +118,15 @@ export class MerchantService {
 		this.core.stop(ref);
 
 		merchant.status = PluginStatus.DISABLED;
+		await this.currencyService.deactivateCurrenciesByPlugin(
+			PluginType.MERCHANT,
+			id
+		);
+		await this.routeService.deactivateRoutesByPlugin(
+			PluginType.MERCHANT,
+			id
+		);
 		return this.merchant.save(merchant);
-		// handle currencies and routes changes
 	}
 
 	async remove(id: number) {
@@ -130,6 +146,30 @@ export class MerchantService {
 		await this.merchant.update(ref.id, {
 			status: PluginStatus.DISABLED
 		});
-		// handle currencies and routes changes
+
+		await this.currencyService.deactivateCurrenciesByPlugin(
+			PluginType.MERCHANT,
+			ref.id
+		);
+		await this.routeService.deactivateRoutesByPlugin(
+			PluginType.MERCHANT,
+			ref.id
+		);
+	}
+
+	async getOne(id: number) {
+		const merchant = await this.merchant.findOne({ where: { id } });
+		if (!merchant)
+			throw new NotFoundException('Merchant plugin not found.');
+		return merchant;
+	}
+
+	async createManualMerchant(dto: ManualMerchantDto) {
+		const manual = this.manualMerchant.create(dto);
+		return this.manualMerchant.save(manual);
+	}
+
+	async deleteManualMerchant(id: number) {
+		await this.manualMerchant.delete(id);
 	}
 }

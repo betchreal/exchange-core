@@ -35,14 +35,18 @@ import { ManualMerchant } from '../../merchant/entities/manual-merchant.entity';
 @Check(`"lossPercentage" BETWEEN 0 AND 100`)
 @Check(`jsonb_typeof("extraFields") = 'array'`)
 @Check(`"fromCurrency" <> "toCurrency"`)
+@Check(`(active = true AND "parserId" IS NOT NULL) OR (active = false)`)
 @Check(
-	`("payoutBinding" = 'default' AND "payoutId" IS NULL) OR ("payoutBinding" = 'explicit' AND "payoutId" IS NOT NULL) OR ("payoutBinding" = 'none' AND "payoutId" IS NULL)`
+	`(active = true AND (("payoutBinding" = 'default' AND "payoutId" IS NULL) OR ("payoutBinding" = 'explicit' AND "payoutId" IS NOT NULL) OR ("payoutBinding" = 'none' AND "payoutId" IS NULL))) OR (active = false)`
 )
 @Check(
-	`("amlBinding" = 'default' AND "amlId" IS NULL) OR ("amlBinding" = 'explicit' AND "amlId" IS NOT NULL) OR ("amlBinding" = 'none' AND "amlId" IS NULL)`
+	`(active = true AND (("merchantBinding" = 'default' AND "merchantId" IS NULL AND "manualMerchantId" IS NULL) OR ("merchantBinding" = 'explicit' AND "merchantId" IS NOT NULL AND "manualMerchantId" IS NULL) OR ("merchantBinding" = 'manual' AND "merchantId" IS NULL AND "manualMerchantId" IS NOT NULL))) OR (active = false)`
 )
 @Check(
-	`("merchantBinding" = 'default' AND "merchantId" IS NULL AND "manualMerchantId" IS NULL) OR ("merchantBinding" = 'explicit' AND "merchantId" IS NOT NULL AND "manualMerchantId" IS NULL) OR ("merchantBinding" = 'manual' AND "merchantId" IS NULL AND "manualMerchantId" IS NOT NULL)`
+	`(active = true AND (("depositAmlBinding" = 'default' AND "depositAmlId" IS NULL) OR ("depositAmlBinding" = 'explicit' AND "depositAmlId" IS NOT NULL) OR ("depositAmlBinding" = 'none' AND "depositAmlId" IS NULL))) OR (active = false)`
+)
+@Check(
+	`(active = true AND (("withdrawAmlBinding" = 'default' AND "withdrawAmlId" IS NULL) OR ("withdrawAmlBinding" = 'explicit' AND "withdrawAmlId" IS NOT NULL) OR ("withdrawAmlBinding" = 'none' AND "withdrawAmlId" IS NULL))) OR (active = false)`
 )
 export class Route {
 	@PrimaryGeneratedColumn()
@@ -85,6 +89,12 @@ export class Route {
 		default: () => "'[]'::jsonb"
 	})
 	extraFields: Field[];
+
+	@Column({
+		type: 'boolean',
+		default: true
+	})
+	active: boolean;
 
 	@Column({
 		type: 'numeric',
@@ -139,9 +149,28 @@ export class Route {
 	@Column({
 		type: 'enum',
 		enum: AmlBinding,
-		enumName: 'aml_binding_enum'
+		enumName: 'deposit_aml_binding_enum'
 	})
-	amlBinding: AmlBinding;
+	depositAmlBinding: AmlBinding;
+
+	@Column({
+		type: 'enum',
+		enum: AmlBinding,
+		enumName: 'withdraw_aml_binding_enum'
+	})
+	withdrawAmlBinding: AmlBinding;
+
+	@Column({
+		type: 'varchar',
+		length: 16
+	})
+	fromCurrencyParser: string;
+
+	@Column({
+		type: 'varchar',
+		length: 16
+	})
+	toCurrencyParser: string;
 
 	@CreateDateColumn({
 		type: 'timestamptz'
@@ -168,11 +197,10 @@ export class Route {
 	toCurrency: Currency;
 
 	@ManyToOne(() => Parser, (parser) => parser.routes, {
-		nullable: false,
 		onDelete: 'RESTRICT'
 	})
 	@JoinColumn({ name: 'parserId' })
-	parser: Parser;
+	parser: Parser | null;
 
 	@ManyToOne(() => Payout, (payout) => payout.routes, {
 		onDelete: 'SET NULL'
@@ -192,9 +220,15 @@ export class Route {
 	@JoinColumn({ name: 'manualMerchantId' })
 	manualMerchant?: ManualMerchant | null;
 
-	@ManyToOne(() => Aml, (aml) => aml.routes, {
+	@ManyToOne(() => Aml, (aml) => aml.depositRoutes, {
 		onDelete: 'SET NULL'
 	})
-	@JoinColumn({ name: 'amlId' })
-	aml?: Aml | null;
+	@JoinColumn({ name: 'depositAmlId' })
+	depositAml?: Aml | null;
+
+	@ManyToOne(() => Aml, (aml) => aml.withdrawRoutes, {
+		onDelete: 'SET NULL'
+	})
+	@JoinColumn({ name: 'withdrawAmlId' })
+	withdrawAml?: Aml | null;
 }

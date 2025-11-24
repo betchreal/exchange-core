@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MerchantController } from './merchant.controller';
 import { MerchantService } from './merchant.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,6 +9,8 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { pluginUploadFactory } from '../shared/factories/plugin-upload.factory';
 import { PluginType } from '@exchange-core/common';
+import { CurrencyModule } from '../currency/currency.module';
+import { RouteModule } from '../route/route.module';
 
 @Module({
 	imports: [
@@ -17,9 +19,12 @@ import { PluginType } from '@exchange-core/common';
 			useFactory: pluginUploadFactory(PluginType.MERCHANT)
 		}),
 		TypeOrmModule.forFeature([Merchant, ManualMerchant]),
+		forwardRef(() => CurrencyModule),
+		forwardRef(() => RouteModule),
 		PluginCoreModule
 	],
 	controllers: [MerchantController],
-	providers: [MerchantService]
+	providers: [MerchantService],
+	exports: [MerchantService]
 })
 export class MerchantModule {}

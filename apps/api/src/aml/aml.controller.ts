@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Get,
 	HttpCode,
 	Param,
 	ParseFilePipe,
@@ -17,6 +18,7 @@ import { PluginInstallResponseDto } from '../shared/dtos/plugin-install-response
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateConfigDto } from '../shared/dtos/update-config.dto';
 import { PluginActionResponseDto } from '../shared/dtos/plugin-action-response.dto';
+import { AmlDetailResponseDto } from './dtos/aml-detail-response.dto';
 
 @Controller('aml')
 export class AmlController {
@@ -58,5 +60,11 @@ export class AmlController {
 	@HttpCode(204)
 	removePlugin(@Param('id', ParseIntPipe) id: number) {
 		return this.amlService.remove(id);
+	}
+
+	@Get(':id')
+	@Serialize(AmlDetailResponseDto)
+	getPlugin(@Param('id', ParseIntPipe) id: number) {
+		return this.amlService.getOne(id);
 	}
 }

@@ -78,6 +78,20 @@ export const ManifestSchema = {
       },
     },
 
+    supportedPairs: {
+      type: "object",
+      patternProperties: {
+        "^[A-Z0-9_-]{1,16}$": {
+          type: "array",
+          items: {
+            type: "string",
+            pattern: "^[A-Z0-9_-]{1,16}$",
+          },
+          minItems: 1,
+        },
+      },
+    },
+
     configSchema: {
       type: "object",
     },
@@ -89,17 +103,24 @@ export const ManifestSchema = {
       if: { properties: { type: { const: "payout" } } },
       then: {
         required: ["allowCurrencyCodes", "webhook"],
+        properties: {
+          supportedPairs: false,
+        },
       },
     },
     {
       if: { properties: { type: { const: "merchant" } } },
       then: {
         required: ["allowCurrencyCodes", "webhook"],
+        properties: {
+          supportedPairs: false,
+        },
       },
     },
     {
       if: { properties: { type: { const: "parser" } } },
       then: {
+        required: ["supportedPairs"],
         properties: {
           allowCurrencyCodes: false,
           webhook: false,
@@ -112,6 +133,7 @@ export const ManifestSchema = {
         properties: {
           allowCurrencyCodes: false,
           webhook: false,
+          supportedPairs: false,
         },
       },
     },

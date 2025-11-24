@@ -70,6 +70,9 @@ export class Aml {
 	@OneToMany(() => Currency, (currency) => currency.aml)
 	currencies: Currency[];
 
-	@OneToMany(() => Route, (route) => route.aml)
-	routes: Route[];
+	@OneToMany(() => Route, (route) => route.depositAml)
+	depositRoutes: Route[];
+
+	@OneToMany(() => Route, (route) => route.withdrawAml)
+	withdrawRoutes: Route[];
 }

@@ -15,6 +15,8 @@ export * from "./enums/merchant-method.enum";
 export * from "./enums/parser-method.enum";
 export * from "./enums/aml-method.enum";
 export * from "./enums/plugin-exit-code.enum";
+export * from "./enums/field-type.enum";
+export * from "./enums/field-validator.enum";
 
 export * from "./types/currency-code-plain.type";
 export * from "./types/field.type";
