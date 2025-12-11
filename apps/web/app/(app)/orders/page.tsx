@@ -39,7 +39,7 @@ type OrdersResponse = {
   totalPages: number;
 };
 
-type TabKey = "all" | "error" | `${OrderStatus[keyof typeof OrderStatus]}`;
+type TabKey = "all" | "error" | OrderStatus;
 
 const tabs: { key: TabKey; label: string; statuses?: OrderStatus[] }[] = [
   { key: "all", label: "All" },
