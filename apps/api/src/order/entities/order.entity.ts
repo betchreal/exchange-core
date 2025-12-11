@@ -13,6 +13,7 @@ import {
 	type FormValues,
 	NumericTransformer,
 	OrderStatus,
+	type PaymentDetailsReponse,
 	type RouteSnapshot
 } from '@exchange-core/common';
 import { Route } from '../../route/entities/route.entity';
@@ -22,7 +23,9 @@ import { Principal } from '../../identity/entities/principal.entity';
 @Entity('orders')
 @Check(`"amountFrom" > 0`)
 @Check(`"amountTo" > 0`)
-@Check(`btrim("url") <> ''`)
+@Check(
+	`("status" = 'new' AND "url" IS NULL) OR ("status" != 'new' AND btrim("url") <> '')`
+)
 @Check(`jsonb_typeof("formValues") = 'object'`)
 @Check(
 	`"formValues" ? 'deposit' AND jsonb_typeof("formValues"->'deposit') = 'array'`
@@ -35,12 +38,22 @@ import { Principal } from '../../identity/entities/principal.entity';
 )
 @Check(`jsonb_typeof("routeSnapshot") = 'object'`)
 @Check(`"routeSnapshot" ? 'fromCurrency' AND "routeSnapshot" ? 'toCurrency'`)
-@Check(`("routeSnapshot"->>'fromCurrency') ~ '^[A-Z0-9]{1,}$'`)
-@Check(`("routeSnapshot"->>'toCurrency')   ~ '^[A-Z0-9]{1,}$'`)
-@Check(`("routeSnapshot"->>'fromCurrency') <> ("routeSnapshot"->>'toCurrency')`)
+@Check(`jsonb_typeof("routeSnapshot"->'fromCurrency') = 'object'`)
+@Check(`jsonb_typeof("routeSnapshot"->'toCurrency') = 'object'`)
 @Check(
-	`("status" IN ('not_paid', 'processing') AND "rateFromTo" IS NULL) OR ("status" NOT IN ('not_paid', 'processing') AND "rateFromTo" IS NOT NULL AND "rateFromTo" > 0)`
+	`"routeSnapshot"->'fromCurrency' ? 'name' AND "routeSnapshot"->'fromCurrency' ? 'ticker'`
 )
+@Check(
+	`"routeSnapshot"->'toCurrency' ? 'name' AND "routeSnapshot"->'toCurrency' ? 'ticker'`
+)
+@Check(`("routeSnapshot"->'fromCurrency'->>'ticker') ~ '^[A-Z]{1,}$'`)
+@Check(`("routeSnapshot"->'toCurrency'->>'ticker') ~ '^[A-Z]{1,}$'`)
+@Check(
+	`("routeSnapshot"->'fromCurrency'->>'name') <> ("routeSnapshot"->'toCurrency'->>'name')`
+)
+// @Check(
+// 	`("status" IN ('not_paid', 'processing') AND "rateFromTo" IS NULL) OR ("status" NOT IN ('not_paid', 'processing') AND "rateFromTo" IS NOT NULL AND "rateFromTo" > 0)`
+// )
 export class Order {
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -70,9 +83,10 @@ export class Order {
 	profit: Decimal;
 
 	@Column({
-		type: 'text'
+		type: 'text',
+		nullable: true
 	})
-	url: string;
+	url?: string | null;
 
 	@Column({
 		type: 'enum',
@@ -96,9 +110,43 @@ export class Order {
 	formValues: FormValues;
 
 	@Column({
+		type: 'varchar',
+		length: 255,
+		nullable: true,
+		unique: true
+	})
+	merchantIdentifier: string | null;
+
+	@Column({
+		type: 'varchar',
+		length: 255,
+		nullable: true,
+		unique: true
+	})
+	payoutTxId: string | null;
+
+	@Column({
+		type: 'jsonb',
+		nullable: true
+	})
+	paymentDetails: PaymentDetailsReponse | null;
+
+	@Column({
 		type: 'jsonb'
 	})
 	routeSnapshot: RouteSnapshot;
+
+	@Column({
+		type: 'boolean',
+		default: false
+	})
+	isInPayoutProcess: boolean;
+
+	@Column({
+		type: 'timestamptz',
+		nullable: true
+	})
+	expiresAt: Date | null;
 
 	@CreateDateColumn({
 		type: 'timestamptz'

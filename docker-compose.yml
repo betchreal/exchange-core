@@ -1,0 +1,153 @@
+version: '3.9'
+
+networks:
+  plugins_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.25.0.0/24
+          gateway: 172.25.0.1
+
+services:
+  squid:
+    image: ubuntu/squid:latest
+    container_name: exchange-squid
+    restart: unless-stopped
+    networks:
+      plugins_net:
+        ipv4_address: 172.25.0.2
+    volumes:
+      - ./docker/squid/squid.conf:/etc/squid/squid.conf:ro
+      - ./docker/squid/allowed-domains.txt:/etc/squid/allowed-domains.txt:ro
+      - squid_cache:/var/spool/squid
+      - squid_logs:/var/log/squid
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: exchange-postgres
+    restart: unless-stopped
+    networks:
+      plugins_net:
+        ipv4_address: 172.25.0.3
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    container_name: exchange-redis
+    restart: unless-stopped
+    networks:
+      plugins_net:
+        ipv4_address: 172.25.0.4
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: exchange-api
+    restart: unless-stopped
+    networks:
+      plugins_net:
+        ipv4_address: 172.25.0.10
+    depends_on:
+      squid:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+
+      HTTP_PROXY: http://172.25.0.2:3128
+      HTTPS_PROXY: http://172.25.0.2:3128
+      NO_PROXY: 172.25.0.3,172.25.0.4
+
+      DB_HOST: 172.25.0.3
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: 172.25.0.4
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: ${REDIS_DB}
+
+      CURRENCY_CODES_PATH: /app/apps/api/resources/currency-codes.json
+      EGRESS_ALLOW_LIST_PATH: /app/apps/api/resources/egress_allow_list.json
+
+      AES_KEY: ${AES_KEY}
+
+      STAFF_ACCESS_SECRET: ${STAFF_ACCESS_SECRET}
+      STAFF_ACCESS_TTL: ${STAFF_ACCESS_TTL}
+      STAFF_REFRESH_SECRET: ${STAFF_REFRESH_SECRET}
+      STAFF_REFRESH_TTL: ${STAFF_REFRESH_TTL}
+
+      CUSTOMER_ACCESS_SECRET: ${CUSTOMER_ACCESS_SECRET}
+      CUSTOMER_ACCESS_TTL: ${CUSTOMER_ACCESS_TTL}
+      CUSTOMER_REFRESH_SECRET: ${CUSTOMER_REFRESH_SECRET}
+      CUSTOMER_REFRESH_TTL: ${CUSTOMER_REFRESH_TTL}
+
+      TICKET_PRIVATE_KEY: ${TICKET_PRIVATE_KEY}
+      TICKET_PUBLIC_KEY: ${TICKET_PUBLIC_KEY}
+      TICKET_TTL: ${TICKET_TTL}
+
+      PLUGINS_TMP_PATH: /app/plugins/tmp
+
+      PARSER_INSTALL_PATH: /app/plugins/parser
+      PAYOUT_INSTALL_PATH: /app/plugins/payout
+      MERCHANT_INSTALL_PATH: /app/plugins/merchant
+      AML_INSTALL_PATH: /app/plugins/aml
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE}
+      MAX_PLUGIN_SIZE: ${MAX_PLUGIN_SIZE}
+
+      SALT: ${SALT}
+
+    volumes:
+      - ./plugins/tmp:/app/plugins/tmp
+      - ./plugins/parser:/app/plugins/parser
+      - ./plugins/payout:/app/plugins/payout
+      - ./plugins/merchant:/app/plugins/merchant
+      - ./plugins/aml:/app/plugins/aml
+
+      - ./logs:/app/logs
+
+      - ./apps/api/resources:/app/apps/api/resources:ro
+
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+  redis_data:
+  squid_cache:
+  squid_logs:

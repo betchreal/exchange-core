@@ -29,7 +29,7 @@ export class PluginManager {
 				stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
 				env: opts.env,
 				execArgv
-			} // Поміняти на pipe, pipe
+			}
 		);
 
 		const proc = new PluginProcess(child);

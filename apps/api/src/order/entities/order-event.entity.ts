@@ -13,7 +13,7 @@ import { Order } from './order.entity';
 
 @Entity('order_events')
 @Check(
-	`("type" = 'status_changed' AND "fromStatus" IS NOT NULL AND "toStatus" IS NOT NULL AND "fromStatus" <> "toStatus" AND "commentText" IS NULL) OR ("type" IN ('manager_assigned','manager_released') AND "fromStatus" IS NULL AND "toStatus" IS NULL AND "employeeId" IS NOT NULL AND "commentText" IS NULL) OR ("type" = 'comment_added' AND "fromStatus" IS NULL AND "toStatus" IS NULL AND "employeeId" IS NOT NULL AND "commentText" IS NOT NULL AND btrim("commentText") <> '')`
+	`("type" = 'status_changed' AND "toStatus" IS NOT NULL AND (("fromStatus" IS NULL AND "toStatus" = 'new') OR ("fromStatus" IS NOT NULL AND "fromStatus" <> "toStatus")) AND "commentText" IS NULL) OR ("type" IN ('manager_assigned','manager_released') AND "fromStatus" IS NULL AND "toStatus" IS NULL AND "employeeId" IS NOT NULL AND "commentText" IS NULL) OR ("type" = 'comment_added' AND "fromStatus" IS NULL AND "toStatus" IS NULL AND "employeeId" IS NOT NULL AND "commentText" IS NOT NULL AND btrim("commentText") <> '')`
 )
 @Check(
 	`("actorType" = 'employee' AND "employeeId" IS NOT NULL) OR ("actorType" = 'system' AND "employeeId" IS NULL)`

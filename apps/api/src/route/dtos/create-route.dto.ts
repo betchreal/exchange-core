@@ -100,6 +100,11 @@ export class CreateRouteDto {
 	@IsEnum(AmlBinding)
 	withdrawAmlBinding: AmlBinding;
 
+	@IsInt()
+	@Min(1)
+	@Max(600)
+	orderLifetimeMin: number;
+
 	@IsString()
 	@Length(1, 16)
 	@Matches(/^[A-Z0-9_-]*$/)

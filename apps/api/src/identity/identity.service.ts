@@ -1,6 +1,6 @@
 import {
-	BadRequestException,
 	Injectable,
+	NotFoundException,
 	UnauthorizedException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,7 +10,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import {
 	type SessionContext,
 	type BasePayload,
-	type StaffPayload
+	type StaffPayload,
+	PrincipalType
 } from '@exchange-core/common';
 import { Principal } from './entities/principal.entity';
 import { Repository } from 'typeorm';
@@ -28,12 +29,38 @@ export class IdentityService {
 		private readonly cfg: ConfigService
 	) {}
 
+	async createPrincipal(consumer: PrincipalType) {
+		return this.principal.save(this.principal.create({ type: consumer }));
+	}
+
+	async getPrincipal(id: number) {
+		const principal = await this.principal.findOne({
+			where: { id },
+			relations: ['staff', 'customer']
+		});
+		if (!principal) throw new NotFoundException('Principal not found.');
+		return principal;
+	}
+
 	async createSession(
-		consumer: 'staff' | 'customer',
+		consumer: PrincipalType,
 		principalId: number,
 		ctx: SessionContext
 	) {
 		const sessionId = randomUUID();
+
+		if (consumer === PrincipalType.GUEST) {
+			await this.session.save({
+				id: sessionId,
+				ip: ctx.ip,
+				ua: ctx.ua,
+				principal: {
+					id: principalId
+				}
+			});
+			return;
+		}
+
 		const basePayload: BasePayload = {
 			sub: principalId,
 			sid: sessionId,
@@ -68,7 +95,7 @@ export class IdentityService {
 	}
 
 	async refresh(
-		consumer: 'staff' | 'customer',
+		consumer: PrincipalType.EMPLOYEE | PrincipalType.CUSTOMER,
 		user: BasePayload,
 		token: string,
 		ctx: SessionContext
@@ -126,8 +153,10 @@ export class IdentityService {
 		}
 	}
 
-	private getJwtConfig(consumer: 'staff' | 'customer') {
-		return consumer === 'staff'
+	private getJwtConfig(
+		consumer: PrincipalType.EMPLOYEE | PrincipalType.CUSTOMER
+	) {
+		return consumer === PrincipalType.EMPLOYEE
 			? {
 					access: {
 						secret: this.cfg.getOrThrow('STAFF_ACCESS_SECRET'),
@@ -154,7 +183,7 @@ export class IdentityService {
 		basePayload: any,
 		ctx: SessionContext
 	): StaffPayload | BasePayload {
-		return basePayload.consumer === 'staff'
+		return basePayload.consumer === PrincipalType.EMPLOYEE
 			? { ...basePayload, role: ctx.role }
 			: basePayload;
 	}
@@ -171,5 +200,12 @@ export class IdentityService {
 			.update(token, 'utf8')
 			.digest('base64url');
 		return bcrypt.compare(digest, encrypted);
+	}
+
+	async getLatestSession(principalId: number) {
+		return this.session.findOne({
+			where: { principal: { id: principalId } },
+			order: { createdAt: 'DESC' }
+		});
 	}
 }

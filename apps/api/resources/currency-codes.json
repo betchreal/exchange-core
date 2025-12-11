@@ -8,6 +8,10 @@
     "description": "Bitcoin BEP20 (BTCB)"
   },
   {
+    "code": "BNBBEP20",
+    "description": "Binance Coin BEP20"
+  },
+  {
     "code": "ETH",
     "description": "Ethereum (ETH)"
   },

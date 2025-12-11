@@ -1,0 +1,26 @@
+{
+  "name": "test-plugin",
+  "type": "payout",
+  "version": "1.0.1",
+  "timeouts": { "callMs": 15000, "bootMs": 5000 },
+  "net": { "egressAllowList": ["whitebit.com"] },
+  "allowCurrencyCodes": ["USDTTRC20", "BNBBEP20"],
+  "webhook": {
+      "supported": false
+  },
+  "configSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publicKey", "secretKey"],
+      "properties": {
+          "publicKey": {
+              "type": "string",
+              "minLength": 10
+          },
+          "secretKey": {
+              "type": "string",
+              "minLength": 10
+          }
+      }
+  }
+}

@@ -322,6 +322,39 @@ export class CurrencyService {
 			await this.merchantService.deleteManualMerchant(manualMerchantId);
 	}
 
+	async getList(search?: string, page: number = 1, limit: number = 20) {
+		const queryBuilder = this.currency
+			.createQueryBuilder('currency')
+			.leftJoinAndSelect('currency.code', 'code')
+			.leftJoinAndSelect('currency.merchant', 'merchant')
+			.leftJoinAndSelect('currency.manualMerchant', 'manualMerchant')
+			.leftJoinAndSelect('currency.payout', 'payout')
+			.leftJoinAndSelect('currency.aml', 'aml');
+
+		if (search && search.trim()) {
+			queryBuilder.where('LOWER(currency.name) LIKE LOWER(:search)', {
+				search: `%${search.trim()}%`
+			});
+		}
+
+		const total = await queryBuilder.getCount();
+
+		queryBuilder
+			.skip((page - 1) * limit)
+			.take(limit)
+			.orderBy('currency.name', 'DESC');
+
+		const data = await queryBuilder.getMany();
+
+		return {
+			data,
+			total,
+			page,
+			limit,
+			totalPages: Math.ceil(total / limit)
+		};
+	}
+
 	async getOne(id: number) {
 		const currency = await this.currency.findOne({
 			where: { id },
@@ -329,5 +362,9 @@ export class CurrencyService {
 		});
 		if (!currency) throw new NotFoundException('Currency not found.');
 		return currency;
+	}
+
+	async getCodes() {
+		return this.currencyCode.find();
 	}
 }

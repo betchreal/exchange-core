@@ -126,6 +126,12 @@ export class UpdateRouteDto {
 	parserId?: number;
 
 	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(600)
+	orderLifetimeMin: number;
+
+	@IsOptional()
 	@IsString()
 	@Length(1, 16)
 	@Matches(/^[A-Z0-9_-]*$/)

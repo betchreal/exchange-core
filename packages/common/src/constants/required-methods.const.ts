@@ -14,6 +14,7 @@ export const REQUIRED_METHODS: Record<
           PayoutMethod.GET_FIELDS,
           PayoutMethod.TRANSFER,
           PayoutMethod.WEBHOOK_HANDLER,
+          PayoutMethod.GET_VERIFICATION_DATA,
         ] as const)
       : ([
           PayoutMethod.GET_FIELDS,
@@ -22,17 +23,12 @@ export const REQUIRED_METHODS: Record<
         ] as const),
 
   merchant: (m) =>
-    m.webhook?.supported
-      ? ([
-          MerchantMethod.GET_FIELDS,
-          MerchantMethod.PROCESS_PAYMENT,
-          MerchantMethod.WEBHOOK_HANDLER,
-        ] as const)
-      : ([
-          MerchantMethod.GET_FIELDS,
-          MerchantMethod.PROCESS_PAYMENT,
-          MerchantMethod.CHECK_STATUS,
-        ] as const),
+    [
+      MerchantMethod.GET_FIELDS,
+      MerchantMethod.GET_PAYMENT_DETAILS,
+      MerchantMethod.WEBHOOK_HANDLER,
+      MerchantMethod.GET_VERIFICATION_DATA,
+    ] as const,
 
   parser: () => [ParserMethod.UPDATE_RATES] as const,
 

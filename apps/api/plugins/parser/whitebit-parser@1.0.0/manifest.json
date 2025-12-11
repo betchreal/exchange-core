@@ -1,0 +1,11 @@
+{
+  "name": "whitebit-parser",
+  "type": "parser",
+  "version": "1.0.0",
+  "timeouts": { "callMs": 15000, "bootMs": 5000 },
+  "net": { "egressAllowList": ["whitebit.com"] },
+  "supportedPairs": {
+      "BTC": ["USDT"]
+  },
+  "configSchema": {}
+}

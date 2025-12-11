@@ -45,7 +45,11 @@ export class Parser {
 	})
 	status: PluginStatus;
 
-	// to add interval column
+	@Column({
+		type: 'integer',
+		default: 30000
+	})
+	intervalMs: number;
 
 	@Column({
 		type: 'jsonb'

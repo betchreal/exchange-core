@@ -150,4 +150,8 @@ export class AmlService {
 		if (!aml) throw new NotFoundException('Aml plugin not found.');
 		return aml;
 	}
+
+	async getList() {
+		return this.aml.find();
+	}
 }

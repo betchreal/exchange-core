@@ -1,11 +1,19 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+	BadRequestException,
+	Injectable,
+	UnauthorizedException
+} from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { IdentityService } from '../identity/identity.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Staff } from './entities/staff.entity';
 import { Repository } from 'typeorm';
 import { LoginEmployeeDto } from './dtos/login-employee.dto';
-import { type BasePayload, StaffPayload } from '@exchange-core/common';
+import {
+	type BasePayload,
+	PrincipalType,
+	StaffPayload
+} from '@exchange-core/common';
 
 @Injectable()
 export class AuthService {
@@ -26,16 +34,28 @@ export class AuthService {
 			!employee ||
 			!(await bcrypt.compare(dto.password, employee.passwordHash))
 		)
-			throw new UnauthorizedException('Invalid credentials.');
-		return this.identity.createSession('staff', employee.principal.id, {
-			ip,
-			ua,
-			role: employee.role
-		});
+			throw new BadRequestException('Invalid credentials.');
+		const session = await this.identity.createSession(
+			PrincipalType.EMPLOYEE,
+			employee.principal.id,
+			{
+				ip,
+				ua,
+				role: employee.role
+			}
+		);
+
+		return {
+			...session,
+			staff: {
+				email: employee.email,
+				role: employee.role
+			}
+		};
 	}
 
 	async refresh(token: string, user: BasePayload) {
-		if (user.consumer !== 'staff')
+		if (user.consumer !== PrincipalType.EMPLOYEE)
 			throw new UnauthorizedException('Invalid consumer.');
 		const staff = await this.staff.findOne({
 			where: {
@@ -47,7 +67,7 @@ export class AuthService {
 		});
 
 		if (!staff) throw new UnauthorizedException('Staff not found.');
-		return this.identity.refresh('staff', user, token, {
+		return this.identity.refresh(PrincipalType.EMPLOYEE, user, token, {
 			role: staff.role
 		});
 	}

@@ -1,13 +1,31 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import {
 	AmlBinding,
-	Field,
 	PayoutBinding,
 	RouteMerchantBinding
 } from '@exchange-core/common';
 import Decimal from 'decimal.js';
 import { FieldDto } from '../../shared/dtos/field.dto';
 import { ManualMerchantDto } from '../../merchant/dtos/manual-merchant.dto';
+
+class FieldWithSourceDto extends FieldDto {
+	@Expose()
+	source: 'currency' | 'route' | 'plugin';
+}
+
+class FormFieldsDto {
+	@Expose()
+	@Type(() => FieldWithSourceDto)
+	deposit: FieldWithSourceDto[];
+
+	@Expose()
+	@Type(() => FieldWithSourceDto)
+	withdraw: FieldWithSourceDto[];
+
+	@Expose()
+	@Type(() => FieldWithSourceDto)
+	extra: FieldWithSourceDto[];
+}
 
 export class RouteResponseDto {
 	@Expose()
@@ -26,8 +44,11 @@ export class RouteResponseDto {
 	maxTo: string;
 
 	@Expose()
-	@Type(() => FieldDto)
-	extraFields: FieldDto[];
+	@Type(() => FormFieldsDto)
+	formFields: FormFieldsDto;
+
+	@Expose()
+	rate: string | null;
 
 	@Expose()
 	active: boolean;
@@ -59,6 +80,10 @@ export class RouteResponseDto {
 	withdrawAmlBinding: AmlBinding;
 
 	@Expose()
+	@Transform(({ obj }) => obj.orderLifetimeMs / 60000)
+	orderLifetimeMin: number;
+
+	@Expose()
 	fromCurrencyParser: string;
 
 	@Expose()
@@ -73,7 +98,7 @@ export class RouteResponseDto {
 	toCurrencyId: number;
 
 	@Expose()
-	@Transform(({ obj }) => obj.parser.id)
+	@Transform(({ obj }) => obj.parser?.id ?? null)
 	parserId: number;
 
 	@Expose()

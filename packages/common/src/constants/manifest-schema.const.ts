@@ -72,8 +72,8 @@ export const ManifestSchema = {
         supported: {
           type: "boolean",
         },
-        signature: {
-          enum: ["none" /*подумати, які можливі*/],
+        endpoint: {
+          type: "string",
         },
       },
     },
@@ -114,6 +114,20 @@ export const ManifestSchema = {
         required: ["allowCurrencyCodes", "webhook"],
         properties: {
           supportedPairs: false,
+          webhook: {
+            type: "object",
+            additionalProperties: false,
+            required: ["supported"],
+            properties: {
+              supported: {
+                type: "boolean",
+                const: true, // ← Для merchant ЗАВЖДИ true
+              },
+              endpoint: {
+                type: "string",
+              },
+            },
+          },
         },
       },
     },

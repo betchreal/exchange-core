@@ -8,10 +8,12 @@ import { ParserModule } from '../parser/parser.module';
 import { PayoutModule } from '../payout/payout.module';
 import { MerchantModule } from '../merchant/merchant.module';
 import { AmlModule } from '../aml/aml.module';
+import { OrderModule } from '../order/order.module';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([Route]),
+		forwardRef(() => OrderModule),
 		forwardRef(() => CurrencyModule),
 		forwardRef(() => ParserModule),
 		forwardRef(() => PayoutModule),

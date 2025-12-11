@@ -10,6 +10,7 @@ import { IdentityModule } from '../identity/identity.module';
 @Module({
 	imports: [TypeOrmModule.forFeature([Staff]), IdentityModule],
 	controllers: [StaffController, AuthController],
-	providers: [StaffService, AuthService]
+	providers: [StaffService, AuthService],
+	exports: [StaffService]
 })
 export class StaffModule {}

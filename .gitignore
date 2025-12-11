@@ -13,6 +13,7 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+next-env.*
 
 # Testing
 coverage
@@ -41,3 +42,7 @@ yarn-error.log*
 
 # Project
 project-overview.md
+
+# Docker volumes (bind mounts)
+/plugins/
+logs/

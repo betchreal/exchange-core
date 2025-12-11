@@ -1,7 +1,7 @@
 import process from 'node:process';
 import { ExitCode } from '@exchange-core/common';
 import type { CallMsg, RespMsg } from '../ipc/messages';
-import '../../proxy.bootstrap';
+//import '../../proxy.bootstrap';
 
 function parseArg(name: string) {
 	const i = process.argv.indexOf(name);

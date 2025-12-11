@@ -24,7 +24,8 @@ import {
 	ManifestSchema,
 	PluginType,
 	MetadataKey,
-	REQUIRED_METHODS
+	REQUIRED_METHODS,
+	Field
 } from '@exchange-core/common';
 import { PluginManager } from './engine/plugin.manager';
 import { TicketService } from '../ticket/ticket.service';
@@ -192,6 +193,19 @@ export class PluginCoreService {
 		return proc;
 	}
 
+	get(ref: PluginRef): PluginProcess | undefined {
+		return this.manager.get(ref);
+	}
+
+	getOrThrow(ref: PluginRef): PluginProcess {
+		const proc = this.manager.get(ref);
+		if (!proc)
+			throw new Error(
+				`Plugin process not found for ${ref.type}:${ref.id}`
+			);
+		return proc;
+	}
+
 	stop(ref: PluginRef) {
 		return this.manager.stop(ref);
 	}
@@ -206,8 +220,38 @@ export class PluginCoreService {
 		}
 	}
 
+	isFieldArray(fields: unknown): fields is Field[] {
+		if (!Array.isArray(fields)) return false;
+
+		const isValid = fields.every(
+			(f) =>
+				typeof f === 'object' &&
+				f != null &&
+				f.id != null &&
+				typeof f.id === 'string' &&
+				/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(f.id) &&
+				typeof f.label === 'string' &&
+				f.label.trim() !== '' &&
+				typeof f.hint === 'string' &&
+				typeof f.validator === 'string'
+		);
+
+		if (!isValid) return false;
+
+		const ids = new Set<string>();
+		const labels = new Set<string>();
+
+		for (const field of fields) {
+			if (ids.has(field.id!)) return false;
+			if (labels.has(field.label)) return false;
+			ids.add(field.id!);
+			labels.add(field.label);
+		}
+
+		return true;
+	}
+
 	private async decrypt(encoded: string) {
-		// to recheck
 		const decoded = JSON.parse(
 			Buffer.from(encoded, 'base64').toString('utf-8')
 		);

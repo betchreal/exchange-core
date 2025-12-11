@@ -1,4 +1,10 @@
 export type RouteSnapshot = {
-  fromCurrency: string;
-  toCurrency: string;
+  fromCurrency: {
+    name: string;
+    ticker: string;
+  };
+  toCurrency: {
+    name: string;
+    ticker: string;
+  };
 };

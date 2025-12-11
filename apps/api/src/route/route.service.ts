@@ -3,11 +3,12 @@ import {
 	forwardRef,
 	Inject,
 	Injectable,
+	InternalServerErrorException,
 	NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Route } from './entities/route.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CurrencyService } from '../currency/currency.service';
 import { CreateRouteDto } from './dtos/create-route.dto';
 import { ParserService } from '../parser/parser.service';
@@ -20,17 +21,24 @@ import { Merchant } from '../merchant/entities/merchant.entity';
 import { Aml } from '../aml/entities/aml.entity';
 import {
 	AmlBinding,
+	CurrencyMerchantBinding,
+	type Field,
+	type FormFields,
 	PayoutBinding,
 	PluginStatus,
 	PluginType,
 	RouteMerchantBinding
 } from '@exchange-core/common';
 import { UpdateRouteDto } from './dtos/update-route.dto';
+import { OrderService } from '../order/order.service';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class RouteService {
 	constructor(
 		@InjectRepository(Route) private readonly route: Repository<Route>,
+		@Inject(forwardRef(() => OrderService))
+		private readonly orderService: OrderService,
 		@Inject(forwardRef(() => CurrencyService))
 		private readonly currencyService: CurrencyService,
 		@Inject(forwardRef(() => ParserService))
@@ -78,7 +86,27 @@ export class RouteService {
 		if (dto.maxTo.lte(dto.minTo))
 			throw new BadRequestException('maxTo must be greater than minTo.');
 
-		// TODO перевірка курсу та можливості існування шляху
+		// Validate rate compatibility
+		let rate: Decimal;
+		try {
+			rate = await this.parserService.getRate(
+				dto.parserId,
+				dto.fromCurrencyParser,
+				dto.toCurrencyParser
+			);
+		} catch {
+			throw new BadRequestException(
+				'Unable to fetch exchange rate from parser. Please check parser configuration.'
+			);
+		}
+
+		const minToByRate = dto.minFrom.mul(rate);
+		const maxToByRate = dto.maxFrom.mul(rate);
+
+		if (dto.minTo.gt(maxToByRate) || dto.maxTo.lt(minToByRate))
+			throw new BadRequestException(
+				`TO amount range [${dto.minTo.toString()}, ${dto.maxTo.toString()}] does not overlap with possible range from FROM [${minToByRate.toFixed(2)}, ${maxToByRate.toFixed(2)}] at current rate. Adjust boundaries.`
+			);
 
 		if (dto.payoutBinding === PayoutBinding.EXPLICIT) {
 			payout = await this.payoutService.getOne(dto.payoutId!);
@@ -145,6 +173,7 @@ export class RouteService {
 			merchantBinding: dto.merchantBinding,
 			depositAmlBinding: dto.depositAmlBinding,
 			withdrawAmlBinding: dto.withdrawAmlBinding,
+			orderLifetimeMs: dto.orderLifetimeMin * 60000,
 			fromCurrencyParser: dto.fromCurrencyParser,
 			toCurrencyParser: dto.toCurrencyParser,
 			fromCurrency,
@@ -333,6 +362,8 @@ export class RouteService {
 		if (dto.minTo != null) route.minTo = dto.minTo;
 		if (dto.maxTo != null) route.maxTo = dto.maxTo;
 		if (dto.extraFields != null) route.extraFields = dto.extraFields;
+		if (dto.orderLifetimeMin != null)
+			route.orderLifetimeMs = dto.orderLifetimeMin * 60000;
 		if (dto.active != null) {
 			if (dto.active) {
 				if (!route.fromCurrency.active || !route.toCurrency.active)
@@ -383,6 +414,8 @@ export class RouteService {
 						'Cannot activate route with explicit withdraw AML binding but no withdraw AML plugin.'
 					);
 			}
+			if (!dto.active && route.active)
+				await this.orderService.handleRouteDeactivation(route.id);
 			route.active = dto.active;
 		}
 		if (dto.commissionAmount != null)
@@ -400,7 +433,34 @@ export class RouteService {
 		if (route.maxTo.lte(route.minTo))
 			throw new BadRequestException('maxTo must be greater than minTo.');
 
-		// TODO: Validate rate compatibility when Parser infrastructure is ready
+		// Validate rate compatibility (only if parser is configured)
+		if (
+			route.parser &&
+			route.fromCurrencyParser &&
+			route.toCurrencyParser
+		) {
+			let rate: Decimal;
+			try {
+				rate = await this.parserService.getRate(
+					route.parser.id,
+					route.fromCurrencyParser,
+					route.toCurrencyParser
+				);
+			} catch {
+				throw new BadRequestException(
+					'Unable to fetch exchange rate from parser. Please check parser configuration.'
+				);
+			}
+
+			const minToByRate = route.minFrom.mul(rate);
+			const maxToByRate = route.maxFrom.mul(rate);
+
+			// Check if ranges have NO overlap (intervals don't intersect)
+			if (route.minTo.gt(maxToByRate) || route.maxTo.lt(minToByRate))
+				throw new BadRequestException(
+					`TO amount range [${route.minTo.toString()}, ${route.maxTo.toString()}] does not overlap with possible range from FROM [${minToByRate.toFixed(2)}, ${maxToByRate.toFixed(2)}] at current rate. Adjust boundaries.`
+				);
+		}
 
 		try {
 			const updated = await this.route.save(route);
@@ -427,6 +487,13 @@ export class RouteService {
 		});
 		if (!route) throw new NotFoundException('Route not found.');
 
+		const hasActiveOrders =
+			await this.orderService.hasActiveOrdersByRoute(id);
+		if (hasActiveOrders)
+			throw new BadRequestException(
+				'Cannot delete route: active orders exist. Wait for completion or manually cancel them first.'
+			);
+
 		const manualMerchantId = route.manualMerchant?.id;
 
 		await this.route.remove(route);
@@ -450,27 +517,222 @@ export class RouteService {
 			]
 		});
 		if (!route) throw new NotFoundException('Route not found.');
-		return route;
+
+		const fromCurrency = await this.currencyService.getOne(
+			route.fromCurrency.id
+		);
+		const toCurrency = await this.currencyService.getOne(
+			route.toCurrency.id
+		);
+
+		let merchant: Merchant | null | undefined = undefined;
+		if (route.merchantBinding === RouteMerchantBinding.EXPLICIT) {
+			merchant = route.merchant;
+		} else if (route.merchantBinding === RouteMerchantBinding.DEFAULT) {
+			if (
+				fromCurrency.merchantBinding !== CurrencyMerchantBinding.MANUAL
+			) {
+				merchant = fromCurrency.merchant;
+			}
+		}
+
+		let payout: Payout | null | undefined = undefined;
+		if (route.payoutBinding === PayoutBinding.EXPLICIT) {
+			payout = route.payout;
+		} else if (route.payoutBinding === PayoutBinding.DEFAULT) {
+			payout = toCurrency.payout;
+		}
+
+		let merchantFields: Field[] = [];
+		if (merchant) {
+			try {
+				merchantFields = await this.merchantService.getFields(
+					merchant.id,
+					fromCurrency.code.code
+				);
+			} catch (err) {
+				throw new InternalServerErrorException(err.message);
+			}
+		}
+
+		let payoutFields: Field[] = [];
+		if (payout) {
+			try {
+				payoutFields = await this.payoutService.getFields(
+					payout.id,
+					toCurrency.code.code
+				);
+			} catch (err) {
+				throw new InternalServerErrorException(err.message);
+			}
+		}
+
+		const formFields: FormFields = {
+			deposit: [
+				...fromCurrency.depositFields.map((f) => ({
+					...f,
+					source: 'currency' as const
+				})),
+				...merchantFields.map((f) => ({
+					...f,
+					source: 'plugin' as const
+				}))
+			],
+			withdraw: [
+				...toCurrency.withdrawFields.map((f) => ({
+					...f,
+					source: 'currency' as const
+				})),
+				...payoutFields.map((f) => ({
+					...f,
+					source: 'plugin' as const
+				}))
+			],
+			extra: route.extraFields.map((f) => ({
+				...f,
+				source: 'route' as const
+			}))
+		};
+
+		let rate: string | null = null;
+		if (
+			route.parser &&
+			route.fromCurrencyParser &&
+			route.toCurrencyParser
+		) {
+			try {
+				const sourceRate = await this.parserService.getRate(
+					route.parser.id,
+					route.fromCurrencyParser,
+					route.toCurrencyParser
+				);
+				const rateDecimal = sourceRate
+					.minus(sourceRate.mul(route.commissionPercentage.div(100)))
+					.minus(sourceRate.mul(route.lossPercentage.div(100)))
+					.minus(route.commissionAmount)
+					.minus(route.lossAmount);
+
+				rate = rateDecimal.toFixed(8);
+			} catch {
+				rate = null;
+			}
+		}
+
+		return {
+			...route,
+			formFields,
+			rate
+		};
+	}
+
+	async getList(page: number, limit: number, search?: string) {
+		const queryBuilder = this.route
+			.createQueryBuilder('route')
+			.leftJoinAndSelect('route.fromCurrency', 'fromCurrency')
+			.leftJoinAndSelect('route.toCurrency', 'toCurrency')
+			.leftJoinAndSelect('route.parser', 'parser');
+
+		if (search && search.trim()) {
+			queryBuilder.where(
+				'(LOWER(fromCurrency.name) LIKE LOWER(:search) OR LOWER(toCurrency.name) LIKE LOWER(:search))',
+				{ search: `%${search.trim()}%` }
+			);
+		}
+
+		const total = await queryBuilder.getCount();
+
+		queryBuilder
+			.skip((page - 1) * limit)
+			.take(limit)
+			.orderBy('fromCurrency.name', 'DESC');
+
+		const routes = await queryBuilder.getMany();
+
+		const data = await Promise.all(
+			routes.map(async (route) => {
+				let rate: string | null = null;
+
+				if (
+					route.parser &&
+					route.fromCurrencyParser &&
+					route.toCurrencyParser
+				) {
+					try {
+						const sourceRate = await this.parserService.getRate(
+							route.parser.id,
+							route.fromCurrencyParser,
+							route.toCurrencyParser
+						);
+						const rateDecimal = sourceRate
+							.minus(
+								sourceRate.mul(
+									route.commissionPercentage.div(100)
+								)
+							)
+							.minus(
+								sourceRate.mul(route.lossPercentage.div(100))
+							)
+							.minus(route.commissionAmount)
+							.minus(route.lossAmount);
+
+						rate = rateDecimal.toFixed(8);
+					} catch {
+						rate = null;
+					}
+				}
+
+				return {
+					...route,
+					rate
+				};
+			})
+		);
+
+		return {
+			data,
+			total,
+			page,
+			limit,
+			totalPages: Math.ceil(total / limit)
+		};
 	}
 
 	async deactivateRoutesByCurrencies(currencyIds: number[]) {
 		if (!currencyIds.length) return;
-		await this.route
-			.createQueryBuilder()
-			.update(Route)
-			.set({ active: false })
-			.where('"fromCurrency" IN (:...ids)', { ids: currencyIds })
-			.orWhere('"toCurrency" IN (:...ids)', { ids: currencyIds })
-			.execute();
+		const affectedRoutes = await this.route.find({
+			where: [
+				{ fromCurrency: { id: In(currencyIds) } },
+				{ toCurrency: { id: In(currencyIds) } }
+			],
+			select: ['id']
+		});
+
+		if (!affectedRoutes.length) return;
+
+		const routeIds = affectedRoutes.map((r) => r.id);
+
+		await this.route.update({ id: In(routeIds) }, { active: false });
+
+		for (const routeId of routeIds)
+			await this.orderService.handleRouteDeactivation(routeId);
 
 		console.log(
-			`[RouteService] Deactivated routes using currencies: ${currencyIds.join(', ')}`
+			`[RouteService] Deactivated routes ${routeIds.length} using currencies: ${currencyIds.join(', ')}`
 		);
 	}
 
 	async deactivateRoutesByPlugin(type: PluginType, id: number) {
+		let affectedRoutes: Route[] = [];
 		switch (type) {
 			case PluginType.PARSER:
+				affectedRoutes = await this.route.find({
+					where: {
+						parser: { id },
+						active: true
+					},
+					select: ['id']
+				});
+
 				await this.route.update(
 					{
 						parser: { id }
@@ -479,6 +741,15 @@ export class RouteService {
 				);
 				break;
 			case PluginType.PAYOUT:
+				affectedRoutes = await this.route.find({
+					where: {
+						payout: { id },
+						payoutBinding: PayoutBinding.EXPLICIT,
+						active: true
+					},
+					select: ['id']
+				});
+
 				await this.route.update(
 					{
 						payout: { id },
@@ -488,6 +759,15 @@ export class RouteService {
 				);
 				break;
 			case PluginType.MERCHANT:
+				affectedRoutes = await this.route.find({
+					where: {
+						merchant: { id },
+						merchantBinding: RouteMerchantBinding.EXPLICIT,
+						active: true
+					},
+					select: ['id']
+				});
+
 				await this.route.update(
 					{
 						merchant: { id },
@@ -497,6 +777,24 @@ export class RouteService {
 				);
 				break;
 			case PluginType.AML:
+				const depositRoutes = await this.route.find({
+					where: {
+						depositAml: { id },
+						depositAmlBinding: AmlBinding.EXPLICIT,
+						active: true
+					},
+					select: ['id']
+				});
+
+				const withdrawRoutes = await this.route.find({
+					where: {
+						withdrawAml: { id },
+						withdrawAmlBinding: AmlBinding.EXPLICIT,
+						active: true
+					},
+					select: ['id']
+				});
+
 				await this.route.update(
 					{
 						depositAml: { id },
@@ -512,10 +810,22 @@ export class RouteService {
 					},
 					{ withdrawAml: null, active: false }
 				);
+
+				const allAmlRoutes = [...depositRoutes, ...withdrawRoutes];
+				const uniqueIds = new Set(allAmlRoutes.map((r) => r.id));
+				affectedRoutes = Array.from(uniqueIds).map(
+					(id) => ({ id }) as Route
+				);
 				break;
 			default:
 				break;
 		}
+
+		if (!affectedRoutes) return;
+
+		const routeIds = affectedRoutes.map((r) => r.id);
+		for (const routeId of routeIds)
+			await this.orderService.handleRouteDeactivation(routeId);
 
 		console.log(
 			`[RouteService] Deactivated routes due to ${type} plugin #${id} failure;`
@@ -526,20 +836,26 @@ export class RouteService {
 		const routes = await this.route.find({
 			where: [
 				{
-					fromCurrency: {
-						id: currencyId
-					}
+					fromCurrency: { id: currencyId }
 				},
 				{
-					toCurrency: {
-						id: currencyId
-					}
+					toCurrency: { id: currencyId }
 				}
 			],
 			relations: ['manualMerchant']
 		});
 
 		if (!routes.length) return;
+
+		const routesWithActiveOrders: number[] = [];
+		for (const route of routes) {
+			if (await this.orderService.hasActiveOrdersByRoute(route.id))
+				routesWithActiveOrders.push(route.id);
+		}
+		if (routesWithActiveOrders.length > 0)
+			throw new BadRequestException(
+				`Cannot delete currency: ${routesWithActiveOrders.length} route(s) have active orders. Complete or cancel orders first.`
+			);
 
 		const manualMerchantIds: number[] = [];
 		for (const route of routes) {

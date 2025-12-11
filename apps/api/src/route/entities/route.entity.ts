@@ -35,6 +35,7 @@ import { ManualMerchant } from '../../merchant/entities/manual-merchant.entity';
 @Check(`"lossPercentage" BETWEEN 0 AND 100`)
 @Check(`jsonb_typeof("extraFields") = 'array'`)
 @Check(`"fromCurrency" <> "toCurrency"`)
+@Check(`"orderLifetimeMs" > 0 AND "orderLifetimeMs" <= 36000000`)
 @Check(`(active = true AND "parserId" IS NOT NULL) OR (active = false)`)
 @Check(
 	`(active = true AND (("payoutBinding" = 'default' AND "payoutId" IS NULL) OR ("payoutBinding" = 'explicit' AND "payoutId" IS NOT NULL) OR ("payoutBinding" = 'none' AND "payoutId" IS NULL))) OR (active = false)`
@@ -159,6 +160,11 @@ export class Route {
 		enumName: 'withdraw_aml_binding_enum'
 	})
 	withdrawAmlBinding: AmlBinding;
+
+	@Column({
+		type: 'integer'
+	})
+	orderLifetimeMs: number;
 
 	@Column({
 		type: 'varchar',

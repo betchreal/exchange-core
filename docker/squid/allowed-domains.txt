@@ -1,0 +1,2 @@
+.api.binance.com
+.whitebit.com

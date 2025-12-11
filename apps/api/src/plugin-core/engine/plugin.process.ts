@@ -1,5 +1,11 @@
 import { ChildProcess } from 'child_process';
 import type { CallMsg, RespMsg } from '../ipc/messages';
+import {
+	AmlMethod,
+	MerchantMethod,
+	ParserMethod,
+	PayoutMethod
+} from '@exchange-core/common';
 
 export class PluginProcess {
 	private pending = new Map<string, (r: RespMsg) => void>();
@@ -44,8 +50,12 @@ export class PluginProcess {
 		]);
 	}
 
-	call(method: string, args: any, timeoutMs: number) {
-		const id = 'c-' + Math.random().toString(36).slice(2);
+	call(
+		method: ParserMethod | PayoutMethod | MerchantMethod | AmlMethod,
+		args: any,
+		timeoutMs: number
+	) {
+		const id = Math.random().toString(36).slice(2);
 		return new Promise((resolve, reject) => {
 			const t = setTimeout(() => {
 				this.pending.delete(id);

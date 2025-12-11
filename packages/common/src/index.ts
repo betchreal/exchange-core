@@ -32,11 +32,17 @@ export * from "./types/plugin-key.type";
 export * from "./types/plugin-ref.type";
 export * from "./types/boot-options.type";
 export * from "./types/launch-options.type";
+export * from "./types/payment-details-response.type";
+export * from "./types/form-fields.type";
+export * from "./types/order-sse-event.type";
+export * from "./types/merchant-webhook-response.type";
+export * from "./types/payout-webhook-response.type";
 
 export * from "./transformers/numeric.transformer";
 
 export * from "./constants/order-state-machine.const";
 export * from "./constants/manifest-schema.const";
 export * from "./constants/required-methods.const";
+export * from "./constants/validators.const";
 
 export * from "./tokens/serialize-dto.token";

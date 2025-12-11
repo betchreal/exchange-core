@@ -7,6 +7,5 @@ export class MerchantDetailResponseDto extends BasePluginDetailResponseDto {
 	allowCurrencyCodes: string[];
 
 	@Expose()
-	@Transform(({ obj }) => obj.manifest.webhook.supported)
-	webhook: boolean;
+	webhookUrl?: string;
 }

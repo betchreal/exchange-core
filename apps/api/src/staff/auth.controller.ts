@@ -33,19 +33,26 @@ export class AuthController {
 		@Ip() ip?: string,
 		@Headers('user-agent') ua?: string
 	) {
-		const { access, refresh } = await this.authService.login(dto, ip, ua);
-		res.cookie('rt-staff', refresh, {
+		const result = await this.authService.login(dto, ip, ua);
+		res.cookie('at-staff', result.access, {
 			httpOnly: true,
-			secure: true,
-			sameSite: 'none',
+			secure: false, // true для https
+			sameSite: 'strict',
+			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_ACCESS_TTL')))
+		});
+		res.cookie('rt-staff', result.refresh, {
+			httpOnly: true,
+			secure: false, // true для https
+			sameSite: 'strict',
 			path: '/auth/staff/refresh',
 			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_REFRESH_TTL')))
 		});
-		return { access };
+		return result.staff;
 	}
 
 	@Post('refresh')
 	@UseGuards(StaffRefreshGuard)
+	@HttpCode(204)
 	async refresh(
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response,
@@ -55,14 +62,19 @@ export class AuthController {
 			req.cookies['rt-staff'],
 			user
 		);
+		res.cookie('at-staff', access, {
+			httpOnly: true,
+			secure: false, // true для https
+			sameSite: 'strict',
+			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_ACCESS_TTL')))
+		});
 		res.cookie('rt-staff', refresh, {
 			httpOnly: true,
-			secure: true,
-			sameSite: 'none',
+			secure: false, // true для https
+			sameSite: 'strict',
 			path: '/auth/staff/refresh',
 			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_REFRESH_TTL')))
 		});
-		return { access };
 	}
 
 	@Post('logout')
@@ -73,10 +85,15 @@ export class AuthController {
 		@CurrentUser() user: StaffPayload
 	) {
 		await this.authService.logout(user);
+		res.clearCookie('at-staff', {
+			httpOnly: true,
+			secure: false, // true для https
+			sameSite: 'strict' //!
+		});
 		res.clearCookie('rt-staff', {
 			httpOnly: true,
-			secure: true,
-			sameSite: 'none',
+			secure: false, // true для https
+			sameSite: 'strict', //!
 			path: '/auth/staff/refresh'
 		});
 	}

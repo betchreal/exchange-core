@@ -1,6 +1,6 @@
 export enum MerchantMethod {
   GET_FIELDS = "getFields",
-  PROCESS_PAYMENT = "processPayment",
+  GET_PAYMENT_DETAILS = "getPaymentDetails",
   WEBHOOK_HANDLER = "webhookHandler",
-  CHECK_STATUS = "checkStatus",
+  GET_VERIFICATION_DATA = "getVerificationData",
 }

@@ -72,4 +72,6 @@ export class Payout {
 
 	@OneToMany(() => Route, (route) => route.payout)
 	routes: Route[];
+
+	webhookUrl?: string;
 }

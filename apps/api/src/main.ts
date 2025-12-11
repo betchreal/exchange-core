@@ -6,9 +6,16 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { DecimalPipe } from './shared/pipes/decimal.pipe';
 import { PgErrorFilter } from './shared/filters/pg-error.filter';
+import 'dotenv/config';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
+
+	app.enableCors({
+		origin: process.env.FRONTEND_URL,
+		credentials: true
+	});
+
 	app.use(cookieParser());
 	app.useGlobalPipes(
 		new ValidationPipe({

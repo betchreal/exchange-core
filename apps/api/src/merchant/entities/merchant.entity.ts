@@ -72,4 +72,6 @@ export class Merchant {
 
 	@OneToMany(() => Route, (route) => route.merchant)
 	routes: Route[];
+
+	webhookUrl?: string;
 }

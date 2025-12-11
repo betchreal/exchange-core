@@ -14,7 +14,7 @@ export type Manifest = {
   allowCurrencyCodes?: string[];
   webhook?: {
     supported: boolean;
-    signature?: "none" /*| і подумати, які ще треба*/;
+    endpoint?: string;
   };
   supportedPairs?: Record<string, string[]>;
   configSchema: Record<string, any>;

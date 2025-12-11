@@ -6,12 +6,15 @@ export class GenerateEnums implements MigrationInterface {
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query(
 			`CREATE TYPE order_status_enum AS ENUM (
+			 'new',
              'not_paid',
              'processing',
              'in_payout',
              'hold',
              'success',
+             'returned',
              'error_paid',
+             'error_payout',
              'deleted'
            );`
 		);
