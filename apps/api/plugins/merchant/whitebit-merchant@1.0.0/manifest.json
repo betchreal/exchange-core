@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "timeouts": { "callMs": 15000, "bootMs": 5000 },
   "net": { "egressAllowList": ["whitebit.com"] },
-  "allowCurrencyCodes": ["USDTTRC20", "BNBBEP20", "BTCBEP20"],
+  "allowCurrencyCodes": ["USDTTRC20", "BNBBEP20"],
   "webhook": {
       "supported": true,
       "endpoint": "whiteBIT-verification"
