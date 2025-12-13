@@ -1,12 +1,12 @@
 import {
 	Body,
-	Controller,
+	Controller, Get,
 	Headers,
 	HttpCode,
 	Ip,
 	Post,
 	Req,
-	Res,
+	Res, UnauthorizedException,
 	UseGuards
 } from '@nestjs/common';
 import { type Request, type Response } from 'express';
@@ -18,6 +18,9 @@ import { CurrentUser } from '../identity/decorators/current-user.decorator';
 import { type BasePayload, type StaffPayload } from '@exchange-core/common';
 import ms from 'ms';
 import { ConfigService } from '@nestjs/config';
+import {StaffGuard} from "./guards/staff.guard";
+import {CurrentStaff} from "./decorators/current-staff.decorator";
+import {Staff} from "./entities/staff.entity";
 
 @Controller('auth/staff')
 export class AuthController {
@@ -36,14 +39,14 @@ export class AuthController {
 		const result = await this.authService.login(dto, ip, ua);
 		res.cookie('at-staff', result.access, {
 			httpOnly: true,
-			secure: false, // true для https
-			sameSite: 'strict',
+			secure: true, // true для https
+			sameSite: 'none',
 			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_ACCESS_TTL')))
 		});
 		res.cookie('rt-staff', result.refresh, {
 			httpOnly: true,
-			secure: false, // true для https
-			sameSite: 'strict',
+			secure: true, // true для https
+			sameSite: 'none',
 			path: '/auth/staff/refresh',
 			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_REFRESH_TTL')))
 		});
@@ -64,14 +67,14 @@ export class AuthController {
 		);
 		res.cookie('at-staff', access, {
 			httpOnly: true,
-			secure: false, // true для https
-			sameSite: 'strict',
+			secure: true, // true для https
+			sameSite: 'none',
 			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_ACCESS_TTL')))
 		});
 		res.cookie('rt-staff', refresh, {
 			httpOnly: true,
-			secure: false, // true для https
-			sameSite: 'strict',
+			secure: true, // true для https
+			sameSite: 'none',
 			path: '/auth/staff/refresh',
 			maxAge: Number(ms(this.cfg.getOrThrow('STAFF_REFRESH_TTL')))
 		});
@@ -87,14 +90,21 @@ export class AuthController {
 		await this.authService.logout(user);
 		res.clearCookie('at-staff', {
 			httpOnly: true,
-			secure: false, // true для https
-			sameSite: 'strict' //!
+			secure: true, // true для https
+			sameSite: 'none' //!
 		});
 		res.clearCookie('rt-staff', {
 			httpOnly: true,
-			secure: false, // true для https
-			sameSite: 'strict', //!
+			secure: true, // true для https
+			sameSite: 'none', //!
 			path: '/auth/staff/refresh'
 		});
+	}
+
+	@Get('verify')
+	@UseGuards(StaffAccessGuard, StaffGuard)
+	@HttpCode(204)
+	verifyStaff(@CurrentStaff() staff: Staff) {
+		if (!staff) throw new UnauthorizedException();
 	}
 }
