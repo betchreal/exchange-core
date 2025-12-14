@@ -13,11 +13,13 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        await api.get("/auth/staff/verify");
+        await api.get("/auth/staff/verify", {
+          skipAuthRefresh: true,
+        } as any);
         setIsAuthenticated(true);
       } catch (error) {
         console.error("Auth verification failed:", error);
-        router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       } finally {
         setIsLoading(false);
       }
